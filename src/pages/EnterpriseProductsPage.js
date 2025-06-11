@@ -1,8 +1,10 @@
 // frontend/src/pages/EnterpriseProductsPage.js
 import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
-import api from '../api/axiosConfig';
-import { toast } from 'react-toastify';
-import { FaEdit, FaTrash, FaPlus, FaWarehouse } from 'react-icons/fa'; // Import icons
+import { useNavigate } from 'react-router-dom'; // Make sure useNavigate is imported
+import api from '../api'; // Correct path to api.js (assuming it's in src/)
+import { toast } from 'react-toastify'; // Ensure react-toastify is installed and used
+import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa'; // Only import used icons
+import './EnterpriseProductsPage.css'; // Optional: for styling
 
 function EnterpriseProductsPage() {
   const [products, setProducts] = useState([]);
@@ -14,12 +16,26 @@ function EnterpriseProductsPage() {
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState(null);
 
+  const navigate = useNavigate(); // Initialize useNavigate
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
   // Define fetchProducts using useCallback
   const fetchProducts = useCallback(async () => {
+    // Redirect if not logged in or not an enterprise (moved here from useEffect)
+    if (!userInfo || userInfo.role !== 'enterprise') {
+        navigate('/login');
+        return;
+    }
+
     try {
       setLoading(true);
-      const res = await api.get('/products/my-products');
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      };
+      // Corrected endpoint to match your previous pattern `/api/products/enterprise-products`
+      const res = await api.get('/api/products/enterprise-products', config); 
       setProducts(res.data);
       setLoading(false);
     } catch (err) {
@@ -27,11 +43,11 @@ function EnterpriseProductsPage() {
       toast.error(err.response?.data?.message || 'Failed to fetch products');
       setLoading(false);
     }
-  }, []); // No dependencies for useCallback
+  }, [userInfo, navigate]); // fetchProducts depends on userInfo and navigate
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]); // Add fetchProducts to useEffect dependencies
+  }, [fetchProducts]); // Now fetchProducts is a stable dependency
 
   const handleAddProduct = () => {
     setCurrentProduct(null); // Clear any existing product data
@@ -48,8 +64,17 @@ function EnterpriseProductsPage() {
 
   const handleSaveProduct = async (event) => {
     event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
+    // Use currentProduct for form values if editing, otherwise new data
+    const productData = currentProduct ? { ...currentProduct } : {};
+
+    // Get data from form inputs if using controlled components or refs
+    // For simplicity with your original form structure (using onSubmit with FormData),
+    // we'll extract directly here. If you have controlled inputs with state, adjust.
+    const form = event.target;
+    productData.name = form.name.value;
+    productData.description = form.description.value;
+    productData.price = parseFloat(form.price.value);
+    productData.isAvailable = form.isAvailable.checked; // Correctly get checkbox state
 
     // Filter out empty warehouse entries
     const validWarehouses = warehousesInput.filter(wh => wh.warehouseName.trim() !== '');
@@ -60,27 +85,26 @@ function EnterpriseProductsPage() {
     }
 
     // Convert stock levels to numbers
-    const finalWarehouses = validWarehouses.map(wh => ({
-        warehouseName: wh.warehouseName,
-        stockLevel: parseInt(wh.stockLevel) || 0 // Ensure stock is a number
+    productData.warehouses = validWarehouses.map(wh => ({
+      warehouseName: wh.warehouseName,
+      stockLevel: parseInt(wh.stockLevel) || 0 // Ensure stock is a number
     }));
 
-    const productData = {
-      name: data.name,
-      description: data.description,
-      price: parseFloat(data.price),
-      warehouses: finalWarehouses,
-      isAvailable: data.isAvailable === 'on' ? true : false // Check if checkbox is 'on'
-    };
-
     try {
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      };
+
       if (currentProduct) {
         // Update product
-        await api.put(`/products/${currentProduct._id}`, productData);
+        await api.put(`/api/products/${currentProduct._id}`, productData, config); // Use /api prefix
         toast.success('Product updated successfully!');
       } else {
         // Add new product
-        await api.post('/products', productData);
+        await api.post('/api/products', productData, config); // Use /api prefix
         toast.success('Product added successfully!');
       }
       setIsModalOpen(false);
@@ -93,7 +117,12 @@ function EnterpriseProductsPage() {
 
   const handleDeleteProduct = async () => {
     try {
-      await api.delete(`/products/${productIdToDelete}`);
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      };
+      await api.delete(`/api/products/${productIdToDelete}`, config); // Use /api prefix
       toast.success('Product deleted successfully!');
       setIsConfirmDeleteModalOpen(false);
       setProductIdToDelete(null);

@@ -1,22 +1,20 @@
 // frontend/src/pages/BuyerProductsPage.js
-import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../api/axiosConfig';
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext'; // Removed this import if not directly used in component logic/JSX
 
 function BuyerProductsPage() {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // If 'user' isn't explicitly used in JSX or component logic, this can be removed to clear warning
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Define fetchProducts using useCallback to prevent unnecessary re-creations
-  // This function now depends on nothing outside its scope (or state setters, which React guarantees stable)
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/products');
+      const res = await api.get('/products'); // Correct endpoint for all products
       setProducts(res.data);
       setLoading(false);
     } catch (err) {
@@ -24,11 +22,11 @@ function BuyerProductsPage() {
       toast.error(err.response?.data?.message || 'Failed to fetch products');
       setLoading(false);
     }
-  }, []); // Empty dependency array for useCallback means it's created once
+  }, []);
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]); // Now fetchProducts is a dependency of useEffect
+  }, [fetchProducts]);
 
   const handleAddToCart = (productId, quantity) => {
     const qtyToAdd = Math.max(1, parseInt(quantity) || 1);
@@ -98,11 +96,11 @@ function BuyerProductsPage() {
 
     try {
       setLoading(true);
-      const res = await api.post('/orders', { items: orderItems, totalAmount });
+      await api.post('/orders', { items: orderItems, totalAmount }); // Correct endpoint for placing orders
       toast.success('Order placed successfully!');
       setCart({});
       setLoading(false);
-      fetchProducts(); // Now fetchProducts is accessible here
+      fetchProducts(); // Re-fetch products to update stock levels
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to place order');
       setError(err.response?.data?.message || 'Failed to place order');
@@ -134,7 +132,7 @@ function BuyerProductsPage() {
                 <input
                   type="number"
                   min="1"
-                  value={cart[product._id] || 1} 
+                  value={cart[product._id] || 1}
                   onChange={(e) => handleQuantityChange(product._id, e.target.value)}
                   id={`quantity-${product._id}`}
                   className="form-input w-20 mr-2"

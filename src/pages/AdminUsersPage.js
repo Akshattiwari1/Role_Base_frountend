@@ -1,3 +1,4 @@
+// frontend/src/pages/AdminUsersPage.js
 import React, { useEffect, useState } from 'react';
 import api from '../api/axiosConfig';
 import { toast } from 'react-toastify';
@@ -7,7 +8,7 @@ function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user: currentUser, updateUserInContext } = useAuth();
+  const { user: currentUser, updateUserInContext } = useAuth(); // Get current logged-in user
 
   useEffect(() => {
     fetchUsers();
@@ -16,7 +17,7 @@ function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/admin/users');
+      const res = await api.get('/admin/users'); // Fetches all users (including admin)
       setUsers(res.data);
       setLoading(false);
     } catch (err) {
@@ -28,9 +29,11 @@ function AdminUsersPage() {
 
   const handleUpdateEnterpriseStatus = async (userId, status) => {
     try {
-      const res = await api.put(`/admin/enterprise/${userId}/status`, { status });
+      // CORRECTED URL: Now explicitly uses /users/ in the path
+      const res = await api.put(`/admin/users/${userId}/status`, { enterpriseStatus: status });
       toast.success(res.data.message);
-      fetchUsers();
+      fetchUsers(); // Refresh list
+      // If the current user is the one being updated (and is an enterprise), update context
       if (currentUser && currentUser._id === userId && currentUser.role === 'enterprise') {
           updateUserInContext({ enterpriseStatus: status });
       }
@@ -40,19 +43,18 @@ function AdminUsersPage() {
     }
   };
 
-  const handleToggleBlock = async (userId) => {
+  const handleToggleBlock = async (userId, currentIsBlocked) => {
     if (currentUser && currentUser._id === userId) {
-        toast.error("You cannot block your own admin account.");
+        toast.error("You cannot block/unblock your own account.");
         return;
     }
 
     try {
-      const res = await api.put(`/admin/user/${userId}/block`);
+      // CORRECTED URL: Now explicitly uses /users/ in the path
+      const res = await api.put(`/admin/users/${userId}/status`, { isBlocked: !currentIsBlocked });
       toast.success(res.data.message);
-      fetchUsers();
-      if (currentUser && currentUser._id === userId) { // If admin blocks self, update context
-          updateUserInContext({ isBlocked: !currentUser.isBlocked });
-      }
+      fetchUsers(); // Refresh list
+      // No need to update current user context for block status as they can't block themselves
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to toggle block status');
       console.error(err);
@@ -102,7 +104,7 @@ function AdminUsersPage() {
                       'No'
                     )}
                   </td>
-                  <td className="table-cell">
+                  <td className="table-cell action-buttons">
                     {user.role === 'enterprise' && user.enterpriseStatus === 'pending' && (
                       <>
                         <button onClick={() => handleUpdateEnterpriseStatus(user._id, 'approved')} className="btn btn-success btn-sm mr-2">Approve</button>
@@ -112,8 +114,8 @@ function AdminUsersPage() {
                      {user.role === 'enterprise' && user.enterpriseStatus === 'approved' && (
                       <button onClick={() => handleUpdateEnterpriseStatus(user._id, 'pending')} className="btn btn-warning btn-sm mr-2">Set Pending</button>
                     )}
-                    {user.role !== 'admin' && (
-                      <button onClick={() => handleToggleBlock(user._id)} className={`btn btn-sm ${user.isBlocked ? 'btn-indigo' : 'btn-secondary'}`}>
+                    {user.role !== 'admin' && ( // Admin cannot block/unblock other admins or themselves
+                      <button onClick={() => handleToggleBlock(user._id, user.isBlocked)} className={`btn btn-sm ${user.isBlocked ? 'btn-indigo' : 'btn-secondary'}`}>
                         {user.isBlocked ? 'Unblock' : 'Block'}
                       </button>
                     )}
