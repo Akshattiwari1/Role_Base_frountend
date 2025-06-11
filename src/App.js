@@ -1,105 +1,85 @@
 // frontend/src/App.js
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './App.css'; // Your main app CSS
 import Header from './components/Header';
+import PrivateRoute from './components/PrivateRoute';
+
+// Public Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+
+// Admin Pages
+import AdminDashboardStatsPage from './pages/AdminDashboardStatsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
-import AdminDashboardStatsPage from './pages/AdminDashboardStatsPage'; // New Admin Dashboard
+import AdminOrdersPage from './pages/AdminOrdersPage'; // Import the new component
+
+// Enterprise Pages
 import EnterpriseProductsPage from './pages/EnterpriseProductsPage';
-import EnterpriseOrdersPage from './pages/EnterpriseOrdersPage'; // Enterprise and Admin orders view
+import EnterpriseOrdersPage from './pages/EnterpriseOrdersPage';
+
+// Buyer Pages
 import BuyerProductsPage from './pages/BuyerProductsPage';
 import BuyerOrdersPage from './pages/BuyerOrdersPage';
-import PrivateRoute from './components/PrivateRoute'; // Your private route component
+
 
 function App() {
   return (
-    <div id="root"> {/* Ensure your index.css sets min-height: 100vh on #root */}
-      <Header />
-      <main> {/* Your index.css should style this for proper padding */}
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+    <Router>
+      <AuthProvider>
+        <Header />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* Admin Routes - Protected */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <PrivateRoute roles={['admin']}>
-                <AdminDashboardStatsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <PrivateRoute roles={['admin']}>
-                <AdminUsersPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/orders"
-            element={
-              <PrivateRoute roles={['admin']}>
-                {/* EnterpriseOrdersPage is reused for Admin, passed isAdmin=true prop */}
-                <EnterpriseOrdersPage isAdmin={true} />
-              </PrivateRoute>
-            }
-          />
+            {/* Admin Routes */}
+            <Route
+              path="/admin/dashboard"
+              element={<PrivateRoute roles={['admin']}><AdminDashboardStatsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/admin/users"
+              element={<PrivateRoute roles={['admin']}><AdminUsersPage /></PrivateRoute>}
+            />
+            <Route
+              path="/admin/orders"
+              element={<PrivateRoute roles={['admin']}><AdminOrdersPage /></PrivateRoute>} // New Admin Orders Route
+            />
 
-          {/* Enterprise Routes - Protected */}
-          <Route
-            path="/enterprise/products"
-            element={
-              <PrivateRoute roles={['enterprise']}>
-                <EnterpriseProductsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/enterprise/orders"
-            element={
-              <PrivateRoute roles={['enterprise']}>
-                {/* EnterpriseOrdersPage for Enterprise's own orders, passed isAdmin=false */}
-                <EnterpriseOrdersPage isAdmin={false} />
-              </PrivateRoute>
-            }
-          />
+            {/* Enterprise Routes */}
+            <Route
+              path="/enterprise/products"
+              element={<PrivateRoute roles={['enterprise']}><EnterpriseProductsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/enterprise/orders"
+              element={<PrivateRoute roles={['enterprise']}><EnterpriseOrdersPage /></PrivateRoute>}
+            />
 
-          {/* Buyer Routes - Protected */}
-          <Route
-            path="/buyer/products"
-            element={
-              <PrivateRoute roles={['buyer']}>
-                <BuyerProductsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/buyer/orders"
-            element={
-              <PrivateRoute roles={['buyer']}>
-                <BuyerOrdersPage />
-              </PrivateRoute>
-            }
-          />
+            {/* Buyer Routes */}
+            <Route
+              path="/buyer/products"
+              element={<PrivateRoute roles={['buyer']}><BuyerProductsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/buyer/orders"
+              element={<PrivateRoute roles={['buyer']}><BuyerOrdersPage /></PrivateRoute>}
+            />
 
-          {/* Fallback route for unmatched paths */}
-          <Route
-            path="*"
-            element={
-              <h1 className="section-title" style={{ marginTop: '5rem' }}>
-                404 - Page Not Found or Unauthorized
-              </h1>
-            }
-          />
-        </Routes>
-      </main>
-    </div>
+            {/* Catch-all for undefined routes */}
+            <Route path="*" element={<h1 className="text-center text-3xl mt-20" style={{color: 'var(--text-color-dark)'}}>404 - Page Not Found</h1>} />
+
+          </Routes>
+        </main>
+        <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" />
+      </AuthProvider>
+    </Router>
   );
 }
 
