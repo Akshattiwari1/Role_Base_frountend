@@ -1,48 +1,46 @@
+// frontend/src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminDashboardStatsPage from './pages/AdminDashboardStatsPage'; // Import the new page
+import EnterpriseProductsPage from './pages/EnterpriseProductsPage';
+import EnterpriseOrdersPage from './pages/EnterpriseOrdersPage';
+import BuyerProductsPage from './pages/BuyerProductsPage';
+import BuyerOrdersPage from './pages/BuyerOrdersPage';
 import PrivateRoute from './components/PrivateRoute';
-import Navbar from './components/Navbar';
-
-// Pages
-import Home from './pages/Home';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import AdminDashboard from './pages/AdminDashboard';
-import EnterpriseDashboard from './pages/EnterpriseDashboard';
-import BuyerDashboard from './pages/BuyerDashboard';
-import Unauthorized from './pages/Unauthorized';
-
 
 function App() {
-    return (
-        <Router>
-            <AuthProvider>
-                <Navbar />
-                <div style={{ padding: '20px' }}> {/* This div is targeted by index.css */}
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/unauthorized" element={<Unauthorized />} />
+  return (
+    <div id="root">
+      <Header />
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-                        {/* Protected Routes */}
-                        <Route element={<PrivateRoute roles={['admin']} />}>
-                            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-                        </Route>
-                        <Route element={<PrivateRoute roles={['admin', 'enterprise']} />}>
-                            <Route path="/enterprise-dashboard" element={<EnterpriseDashboard />} />
-                        </Route>
-                        <Route element={<PrivateRoute roles={['admin', 'enterprise', 'buyer']} />}>
-                            <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
-                        </Route>
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<PrivateRoute roles={['admin']}><AdminDashboardStatsPage /></PrivateRoute>} /> {/* NEW ROUTE */}
+          <Route path="/admin/users" element={<PrivateRoute roles={['admin']}><AdminUsersPage /></PrivateRoute>} />
+          <Route path="/admin/orders" element={<PrivateRoute roles={['admin']}><EnterpriseOrdersPage isAdmin={true} /></PrivateRoute>} />
 
-                        {/* More protected routes can be added here */}
-                    </Routes>
-                </div>
-            </AuthProvider>
-        </Router>
-    );
+          {/* Enterprise Routes */}
+          <Route path="/enterprise/products" element={<PrivateRoute roles={['enterprise']}><EnterpriseProductsPage /></PrivateRoute>} />
+          <Route path="/enterprise/orders" element={<PrivateRoute roles={['enterprise']}><EnterpriseOrdersPage isAdmin={false} /></PrivateRoute>} />
+
+          {/* Buyer Routes */}
+          <Route path="/buyer/products" element={<PrivateRoute roles={['buyer']}><BuyerProductsPage /></PrivateRoute>} />
+          <Route path="/buyer/orders" element={<PrivateRoute roles={['buyer']}><BuyerOrdersPage /></PrivateRoute>} />
+
+          <Route path="*" element={<h1 className="section-title" style={{marginTop: '5rem'}}>404 - Page Not Found or Unauthorized</h1>} />
+        </Routes>
+      </main>
+    </div>
+  );
 }
 
 export default App;
